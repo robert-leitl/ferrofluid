@@ -110,11 +110,14 @@ export class Sketch {
         );
 
         // the domain scale reflects the aspect ratio within the simulation
-        this.domainScale = vec2.copy(vec2.create(), this.viewportSize);
+        /*this.domainScale = vec2.copy(vec2.create(), this.viewportSize);
         const maxSize = Math.max(this.domainScale[0], this.domainScale[1]);
         this.domainScale[0] /= maxSize;
         this.domainScale[1] /= maxSize;
-        vec2.scale(this.domainScale, this.domainScale, (this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR)
+        vec2.scale(this.domainScale, this.domainScale, (this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR)*/
+
+        // use a fixed domain scale for this project
+        this.domainScale = vec2.fromValues(8, 8);
         this.simulationParams.DOMAIN_SCALE = this.domainScale;
         this.simulationParamsNeedUpdate = true;
 
@@ -247,7 +250,9 @@ export class Sketch {
          this.totalSortSteps = ((this.logNumParticles + this.logNumParticles) * (this.logNumParticles + this.logNumParticles + 1)) / 2;
  
          // define the cell sizes
-         this.cellSideCount = Math.max(1, Math.ceil((this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR));
+         //this.cellSideCount = Math.max(1, Math.ceil((this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR));
+         // use a fixed cell side count for this project
+         this.cellSideCount = 10;
          this.numCells = this.cellSideCount * this.cellSideCount;
  
          console.log('number of cells:', this.numCells);
