@@ -30,10 +30,7 @@ export class Sketch {
     #deltaFrames = 0;
 
     // particle constants
-    NUM_PARTICLES = 400;
-
-    // the domain scale factor compresses the field to make a dense particle area
-    DOMAIN_SCALE_FACTOR = 4;
+    NUM_PARTICLES = 500;
 
     // spikes plane properties
     ZOOM = 1.9;
@@ -109,13 +106,6 @@ export class Sketch {
             this.canvas.clientHeight
         );
 
-        // the domain scale reflects the aspect ratio within the simulation
-        /*this.domainScale = vec2.copy(vec2.create(), this.viewportSize);
-        const maxSize = Math.max(this.domainScale[0], this.domainScale[1]);
-        this.domainScale[0] /= maxSize;
-        this.domainScale[1] /= maxSize;
-        vec2.scale(this.domainScale, this.domainScale, (this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR)*/
-
         // use a fixed domain scale for this project
         this.domainScale = vec2.fromValues(8, 8);
         this.simulationParams.DOMAIN_SCALE = this.domainScale;
@@ -163,7 +153,7 @@ export class Sketch {
         // Setup Meshes
         this.quadBufferInfo = twgl.createBufferInfoFromArrays(gl, { a_position: { numComponents: 2, data: [-1, -1, 3, -1, -1, 3] }});
         this.quadVAO = twgl.createVAOAndSetAttributes(gl, this.pressurePrg.attribSetters, this.quadBufferInfo.attribs, this.quadBufferInfo.indices);
-        const spikesArrays = twgl.primitives.createPlaneVertices(1, 1, 200, 200);
+        const spikesArrays = twgl.primitives.createPlaneVertices(1, 1, 100, 100);
         this.spikesBufferInfo = twgl.createBufferInfoFromArrays(gl, spikesArrays);
         this.spikesVAO = twgl.createVAOAndSetAttributes(gl, this.spikesPrg.attribSetters, this.spikesBufferInfo.attribs, this.spikesBufferInfo.indices);
         this.spikesWorldMatrix = mat4.create();
@@ -250,9 +240,8 @@ export class Sketch {
          this.totalSortSteps = ((this.logNumParticles + this.logNumParticles) * (this.logNumParticles + this.logNumParticles + 1)) / 2;
  
          // define the cell sizes
-         //this.cellSideCount = Math.max(1, Math.ceil((this.textureSize * this.simulationParams.H) / this.DOMAIN_SCALE_FACTOR));
          // use a fixed cell side count for this project
-         this.cellSideCount = 10;
+         this.cellSideCount = 11;
          this.numCells = this.cellSideCount * this.cellSideCount;
  
          console.log('number of cells:', this.numCells);
@@ -592,7 +581,7 @@ export class Sketch {
     #updateProjectionMatrix(gl) {
         this.camera.aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
-        const height = .6;
+        const height = .4;
         const distance = this.camera.position[2];
         if (this.camera.aspect > 1) {
             this.camera.fov = 2 * Math.atan( height / distance );
