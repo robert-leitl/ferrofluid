@@ -14,8 +14,8 @@ in vec3 v_normal;
 
 void main() {
     vec3 N = v_normal;
-    vec3 L = normalize(vec3(0., 1., -10.));
+    vec3 L = normalize(vec3(-1., -1., -1.));
     float dif = dot(L, N);
 
-    outColor = vec4(dif) * 0.8 + 0.2;
+    outColor = vec4(dif);
 }

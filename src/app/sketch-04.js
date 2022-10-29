@@ -359,7 +359,7 @@ export class Sketch {
         pointer.addInput(this.pointerParams, 'STRENGTH', { min: 1, max: 35, });
 
         const interaction = this.pane.addFolder({ title: 'Interaction' });
-        interaction.addInput(this, 'ZOOM', { min: 1, max: 2, });
+        interaction.addInput(this, 'ZOOM', { min: 1, max: 2.1, });
 
         sim.on('change', () => this.#updateSimulationParams());
         pointer.on('change', () => this.pointerParamsNeedUpdate = true);
@@ -581,7 +581,8 @@ export class Sketch {
             u_worldMatrix: this.spikesWorldMatrix,
             u_viewMatrix: this.camera.matrices.view,
             u_projectionMatrix: this.camera.matrices.projection,
-            u_heightMapTexture: this.textures.heightMap
+            u_heightMapTexture: this.textures.heightMap,
+            u_zoom: this.ZOOM
         });
         gl.bindVertexArray(this.spikesVAO);
         gl.drawElements(gl.TRIANGLES, this.spikesBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);

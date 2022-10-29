@@ -6,6 +6,7 @@ uniform mat4 u_worldMatrix;
 uniform mat4 u_viewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform sampler2D u_heightMapTexture;
+uniform float u_zoom;
 
 in vec3 position;
 in vec2 texcoord;
@@ -21,8 +22,13 @@ vec3 distort(vec3 p) {
     vec2 uv = p.xz * 0.5 + 0.5;
     float res = texture(u_heightMapTexture, uv).r;
 
+    // weight by zoom
+    float zoomFactor = 1. + (1.9 - u_zoom) * 0.6;
+    res *= zoomFactor;
+
     // smooth out edges
-    float edge = smoothstep(0.5, .8, 1. - length(p));
+    zoomFactor = 1. + (1.9 - u_zoom) * 0.2;
+    float edge = smoothstep(0.5, max(0.8, .8 * zoomFactor), 1. - length(p));
     res *= edge;
 
     // spherical part
