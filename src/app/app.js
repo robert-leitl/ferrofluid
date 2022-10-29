@@ -1,11 +1,13 @@
 import { concatAll, take, count, debounceTime, delay, filter, forkJoin, from, fromEvent, map, scan, withLatestFrom, of, switchMap, tap, distinctUntilChanged } from 'rxjs';
 import { Sketch } from './sketch-04';
 import { Pane } from 'tweakpane';
+import { PitchDetector } from './pitch-detector';
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const hasDebugParam = urlParams.get('debug');
 const isDev = import.meta.env.MODE === 'development';
+const pitchDetector = new PitchDetector();
 let sketch;
 let pane;
 
@@ -27,13 +29,21 @@ const resize = () => {
     }
 }
 
+const micBtnElm = document.body.querySelector('#microphone-button');
+
 // add a debounced resize listener
 fromEvent(window, 'resize').pipe(debounceTime(100)).subscribe(() => resize());
 
 // resize initially on load
 fromEvent(window, 'load').pipe(take(1)).subscribe(() => resize());
 
+// mic button
+fromEvent(micBtnElm, 'click').subscribe(() => {
+    pitchDetector.init();
+    micBtnElm.disabled = true;
+});
+
 // INIT APP
 const canvasElm = document.querySelector('canvas');
-sketch = new Sketch(canvasElm, (instance) => instance.run(), isDev, pane);
+sketch = new Sketch(canvasElm, pitchDetector, (instance) => instance.run(), isDev, pane);
 resize();

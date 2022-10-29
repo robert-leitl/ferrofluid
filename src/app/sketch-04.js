@@ -42,6 +42,8 @@ export class Sketch {
     // resolution of the spikes plane (side segments)
     planeResolution = 200;
 
+    lerpPitch = this.ZOOM;
+
     simulationParams = {
         H: 1, // kernel radius
         MASS: 1, // particle mass
@@ -82,11 +84,12 @@ export class Sketch {
         }
     };
 
-    constructor(canvasElm, onInit = null, isDev = false, pane = null) {
+    constructor(canvasElm, pitchDetector, onInit = null, isDev = false, pane = null) {
         this.canvas = canvasElm;
         this.onInit = onInit;
         this.isDev = isDev;
         this.pane = pane;
+        this.pitchDetector = pitchDetector;
 
         this.#init();
     }
@@ -547,6 +550,11 @@ export class Sketch {
 
     #animate(deltaTime) {
         this.#updatePointer();
+
+        // get the latest pitch value
+        const targetPitch = this.pitchDetector.isInitialized ? 1.9 - this.pitchDetector.getPitch() : 1.9;
+        this.lerpPitch += (targetPitch - this.lerpPitch) / 20;
+        this.ZOOM = this.lerpPitch;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
