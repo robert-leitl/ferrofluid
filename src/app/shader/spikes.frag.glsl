@@ -18,4 +18,5 @@ void main() {
     float dif = dot(L, N);
 
     outColor = vec4(dif);
+    outColor = vec4(v_normal, 1.);
 }
