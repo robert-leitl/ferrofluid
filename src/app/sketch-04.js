@@ -16,8 +16,12 @@ import sortVert from './shader/sort.vert.glsl';
 import sortFrag from './shader/sort.frag.glsl';
 import offsetVert from './shader/offset.vert.glsl';
 import offsetFrag from './shader/offset.frag.glsl';
+import heightMapVert from './shader/height-map.vert.glsl';
+import heightMapFrag from './shader/height-map.frag.glsl';
 import spikesVert from './shader/spikes.vert.glsl';
 import spikesFrag from './shader/spikes.frag.glsl';
+import testVert from './shader/test.vert.glsl';
+import testFrag from './shader/test.frag.glsl';
 
 export class Sketch {
 
@@ -35,11 +39,14 @@ export class Sketch {
     // spikes plane properties
     ZOOM = 1.9;
 
+    // resolution of the spikes plane (side segments)
+    planeResolution = 200;
+
     simulationParams = {
         H: 1, // kernel radius
         MASS: 1, // particle mass
         REST_DENS: 1.8, // rest density
-        GAS_CONST: 20, // gas constant
+        GAS_CONST: 40, // gas constant
         VISC: 5.5, // viscosity constant
 
         // these are calculated from the above constants
@@ -56,7 +63,7 @@ export class Sketch {
 
     pointerParams = {
         RADIUS: 1.5,
-        STRENGTH: 6,
+        STRENGTH: 8,
     }
 
     camera = {
@@ -143,7 +150,9 @@ export class Sketch {
         this.indicesPrg = twgl.createProgramInfo(gl, [indicesVert, indicesFrag]);
         this.sortPrg = twgl.createProgramInfo(gl, [sortVert, sortFrag]);
         this.offsetPrg = twgl.createProgramInfo(gl, [offsetVert, offsetFrag]);
+        this.heightMapPrg = twgl.createProgramInfo(gl, [heightMapVert, heightMapFrag]);
         this.spikesPrg = twgl.createProgramInfo(gl, [spikesVert, spikesFrag]);
+        this.testPrg = twgl.createProgramInfo(gl, [testVert, testFrag]);
 
         // Setup uinform blocks
         this.simulationParamsUBO = twgl.createUniformBlockInfo(gl, this.pressurePrg, 'u_SimulationParams');
@@ -153,7 +162,7 @@ export class Sketch {
         // Setup Meshes
         this.quadBufferInfo = twgl.createBufferInfoFromArrays(gl, { a_position: { numComponents: 2, data: [-1, -1, 3, -1, -1, 3] }});
         this.quadVAO = twgl.createVAOAndSetAttributes(gl, this.pressurePrg.attribSetters, this.quadBufferInfo.attribs, this.quadBufferInfo.indices);
-        const spikesArrays = twgl.primitives.createPlaneVertices(1, 1, 100, 100);
+        const spikesArrays = twgl.primitives.createPlaneVertices(1, 1, this.planeResolution, this.planeResolution);
         this.spikesBufferInfo = twgl.createBufferInfoFromArrays(gl, spikesArrays);
         this.spikesVAO = twgl.createVAOAndSetAttributes(gl, this.spikesPrg.attribSetters, this.spikesBufferInfo.attribs, this.spikesBufferInfo.indices);
         this.spikesWorldMatrix = mat4.create();
@@ -166,6 +175,7 @@ export class Sketch {
         this.indices1FBO = twgl.createFramebufferInfo(gl, [{attachment: this.textures.indices1}], this.textureSize, this.textureSize);
         this.indices2FBO = twgl.createFramebufferInfo(gl, [{attachment: this.textures.indices2}], this.textureSize, this.textureSize);
         this.offsetFBO = twgl.createFramebufferInfo(gl, [{attachment: this.textures.offset}], this.cellSideCount, this.cellSideCount);
+        this.heightMapFBO = twgl.createFramebufferInfo(gl, [{attachment: this.textures.heightMap}], this.heightMapSize, this.heightMapSize);
 
         this.#initEvents();
         this.#updateSimulationParams();
@@ -245,6 +255,9 @@ export class Sketch {
          this.numCells = this.cellSideCount * this.cellSideCount;
  
          console.log('number of cells:', this.numCells);
+
+         // heightmap size
+         this.heightMapSize = this.planeResolution * 2;
  
          const initVelocities = new Float32Array(this.NUM_PARTICLES * 4);
          const initForces = new Float32Array(this.NUM_PARTICLES * 4);
@@ -314,7 +327,17 @@ export class Sketch {
              offset: {
                  ...this.offsetTextureOptions,
                  src: this.initialOffsetTextureData,
-             }
+             },
+             heightMap: {
+                min: gl.LINEAR, 
+                mag: gl.LINEAR,
+                wrap: gl.CLAMP_TO_EDGE,
+                width: this.heightMapSize,
+                height: this.heightMapSize,
+                format: gl.RED, 
+                internalFormat: gl.R32F, 
+                src: new Float32Array(this.heightMapSize * this.heightMapSize)
+            },
          });
  
          this.currentPositionTexture = this.textures.position2;
@@ -504,9 +527,26 @@ export class Sketch {
         this.currentIndicesTexture = sortOutFBO.attachments[0];
     }
 
+    #renderHeightMap() {
+        /** @type {WebGLRenderingContext} */
+        const gl = this.gl;
+
+        // draw height map
+        gl.useProgram(this.heightMapPrg.program);
+        twgl.bindFramebufferInfo(gl, this.heightMapFBO);
+        gl.disable(gl.CULL_FACE);
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
+        gl.bindVertexArray(this.quadVAO);
+        twgl.setUniforms(this.heightMapPrg, { 
+            u_particlePosTexture: this.currentPositionTexture,
+            u_zoom: this.ZOOM,
+        });
+        twgl.drawBufferInfo(gl, this.quadBufferInfo);
+    }
+
     #animate(deltaTime) {
         this.#updatePointer();
-
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -522,7 +562,9 @@ export class Sketch {
         // additional simulation steps
         for(let i=0; i<this.simulationParams.STEPS; ++i) {
             this.#simulate(deltaTime);
-        }
+        }        
+        
+        this.#renderHeightMap();
     }
 
     #render() {
@@ -539,31 +581,26 @@ export class Sketch {
             u_worldMatrix: this.spikesWorldMatrix,
             u_viewMatrix: this.camera.matrices.view,
             u_projectionMatrix: this.camera.matrices.projection,
-            u_particlePosTexture: this.currentPositionTexture,
-            u_indicesTexture: this.currentIndicesTexture,
-            u_offsetTexture: this.textures.offset,
-            u_cellTexSize: [this.cellSideCount, this.cellSideCount],
-            u_cellSize: this.simulationParams.H,
-            u_domainScale: this.domainScale,
-            u_zoom: this.ZOOM
+            u_heightMapTexture: this.textures.heightMap
         });
         gl.bindVertexArray(this.spikesVAO);
         gl.drawElements(gl.TRIANGLES, this.spikesBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
+        
 
        if (this.isDev) {
+            const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
             // draw helper view of particle texture
-            gl.viewport(0, 0, this.viewportSize[0] / 4, this.viewportSize[0] / 4);
+            gl.viewport(0, 0, maxViewportSide / 4, maxViewportSide / 4);
             gl.disable(gl.CULL_FACE);
             gl.disable(gl.DEPTH_TEST);
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA);
-
             gl.useProgram(this.drawPrg.program);
             twgl.setUniforms(this.drawPrg, { 
                 u_positionTexture: this.currentPositionTexture,
                 u_velocityTexture: this.currentVelocityTexture,
-                u_resolution: [this.viewportSize[0] / 4, this.viewportSize[1] / 4],
+                u_resolution: [maxViewportSide / 4, maxViewportSide / 4],
                 u_cellTexSize: [this.cellSideCount, this.cellSideCount],
                 u_cellSize: this.simulationParams.H,
                 u_domainScale: this.domainScale,
