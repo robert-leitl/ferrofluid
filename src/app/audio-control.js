@@ -76,7 +76,8 @@ export class AudioControl {
                 let result = Math.log2(frequency) / Math.log2(this.MAX_FREQ);
 
                 // cut off the lower half and stretch the remaining spectrum (makes it easier to control)
-                result = Math.max(0, result - 0.5) * 2;
+                result = Math.max(0, result - 0.5) * (1 / 0.5);
+                result = (result - 0.5) * 2.;
                 
                 return result;
             }

@@ -37,7 +37,12 @@ export class Sketch {
     NUM_PARTICLES = 500;
 
     // spikes plane properties
-    ZOOM = 1.9;
+    DEFAULT_ZOOM = 1.9;
+    ZOOM = this.DEFAULT_ZOOM;
+
+    // audio controlled zoom offset
+    zoomOffsetMomentum = 0;
+    zoomOffset = 0;
 
     // resolution of the spikes plane (side segments)
     planeResolution = 128;
@@ -549,10 +554,15 @@ export class Sketch {
     #animate(deltaTime) {
         this.#updatePointer();
 
-        // get the latest pitch value
-        const targetPitch = this.audioControl.getValue();
-        //this.lerpPitch += (targetPitch - this.lerpPitch) / 20;
-        //this.ZOOM = this.lerpPitch;
+        // get the latest audio control value
+        let targetZoomOffset = this.audioControl.getValue();
+        targetZoomOffset = targetZoomOffset === -1 ? 0 : targetZoomOffset;
+        // wobble the zoom factor by the offset from the audio control value
+        const deltaZoomOffset = (this.zoomOffset - targetZoomOffset);
+        this.zoomOffsetMomentum -= deltaZoomOffset / 70;
+        this.zoomOffsetMomentum *= 0.92;
+        this.zoomOffset += this.zoomOffsetMomentum;
+        this.ZOOM = this.DEFAULT_ZOOM - this.zoomOffset / 1.5;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
