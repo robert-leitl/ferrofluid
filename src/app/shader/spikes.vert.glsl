@@ -44,7 +44,7 @@ void main() {
     vec3 p = distort(position);
     
     // normal estimation
-    float epsilon = heightMapTexelSize.x * 1.1;
+    float epsilon = heightMapTexelSize.x * 2.;
     vec3 t = distort(position + vec3(epsilon, 0., 0.));
     vec3 b = distort(position + vec3(0., 0., epsilon));
     v_normal = normalize(cross(p - t, b - p));
