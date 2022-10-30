@@ -39,14 +39,15 @@ vec3 distort(vec3 p) {
 }
 
 void main() {
-    vec3 pos = position;
+    vec2 heightMapSize = vec2(textureSize(u_heightMapTexture, 0));
+    vec2 heightMapTexelSize = 1./heightMapSize;
     vec3 p = distort(position);
     
     // normal estimation
-    float epsilon = 0.0001;
+    float epsilon = heightMapTexelSize.x;
     vec3 t = distort(position + vec3(epsilon, 0., 0.));
     vec3 b = distort(position + vec3(0., 0., epsilon));
-    v_normal = normalize(cross(t - p, b - p));
+    v_normal = normalize(cross(p - t, b - p));
 
     v_texcoord = texcoord;
     v_position = position;

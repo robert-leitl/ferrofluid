@@ -40,7 +40,7 @@ export class Sketch {
     ZOOM = 1.9;
 
     // resolution of the spikes plane (side segments)
-    planeResolution = 200;
+    planeResolution = 128;
 
     lerpPitch = this.ZOOM;
 
