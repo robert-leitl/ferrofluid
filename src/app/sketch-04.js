@@ -1,5 +1,5 @@
 import { mat4, vec2, vec3, vec4 } from "gl-matrix";
-import { filter, fromEvent, merge, throwIfEmpty } from "rxjs";
+import { filter, fromEvent, merge, take, throwIfEmpty } from "rxjs";
 import * as twgl from "twgl.js";
 
 import drawVert from './shader/draw.vert.glsl';
@@ -45,7 +45,7 @@ export class Sketch {
     targetZoomLerp = 0;
 
     // resolution of the spikes plane (side segments)
-    planeResolution = 180;
+    planeResolution = 128;
 
     simulationParams = {
         H: 1, // kernel radius
@@ -146,6 +146,7 @@ export class Sketch {
             this.canvas.clientHeight
         );
 
+        this.#initEnvMap();
         this.#initTextures();
 
         // Setup Programs
@@ -348,6 +349,15 @@ export class Sketch {
  
          this.currentPositionTexture = this.textures.position2;
          this.currentVelocityTexture = this.textures.velocity2;
+    }
+
+    #initEnvMap() {
+        /** @type {WebGLRenderingContext} */
+        const gl = this.gl;
+
+        this.envMapTexture = twgl.createTexture(gl, {
+            src: new URL('../assets/env-map-01.jpg', import.meta.url).toString()
+        });
     }
 
     #initTweakpane() {
@@ -568,7 +578,7 @@ export class Sketch {
         this.zoomOffsetMomentum -= deltaZoomOffset / 80;
         this.zoomOffsetMomentum *= 0.92;
         this.zoomOffset += this.zoomOffsetMomentum;
-        this.ZOOM = 0.5 - this.zoomOffset / 2;
+        if (targetZoomOffset !== 0) this.ZOOM = 0.5 - this.zoomOffset / 2;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -604,7 +614,9 @@ export class Sketch {
             u_viewMatrix: this.camera.matrices.view,
             u_projectionMatrix: this.camera.matrices.projection,
             u_heightMapTexture: this.textures.heightMap,
-            u_zoom: this.ZOOM
+            u_zoom: this.ZOOM,
+            u_cameraPosition: this.camera.position,
+            u_envMapTexture: this.envMapTexture
         });
         gl.bindVertexArray(this.spikesVAO);
         gl.drawElements(gl.TRIANGLES, this.spikesBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);

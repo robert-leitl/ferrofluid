@@ -38,6 +38,8 @@ void main() {
     vec2 heightMapTexelSize = 1./heightMapSize;
     float zoom = u_zoom + 1.9;
 
+   // vec3 cameraWorldPos = vec3(u_viewMatrix)
+
     vec3 p = distort(position, zoom);
     
     // normal estimation
