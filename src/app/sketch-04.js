@@ -37,15 +37,15 @@ export class Sketch {
     NUM_PARTICLES = 500;
 
     // spikes plane properties
-    DEFAULT_ZOOM = 1.9;
-    ZOOM = this.DEFAULT_ZOOM;
+    ZOOM = .5;
 
     // audio controlled zoom offset
     zoomOffsetMomentum = 0;
     zoomOffset = 0;
+    targetZoomLerp = 0;
 
     // resolution of the spikes plane (side segments)
-    planeResolution = 128;
+    planeResolution = 180;
 
     simulationParams = {
         H: 1, // kernel radius
@@ -67,8 +67,8 @@ export class Sketch {
     };
 
     pointerParams = {
-        RADIUS: 1.5,
-        STRENGTH: 8,
+        RADIUS: 1.1,
+        STRENGTH: 15,
     }
 
     camera = {
@@ -365,7 +365,7 @@ export class Sketch {
         pointer.addInput(this.pointerParams, 'STRENGTH', { min: 1, max: 35, });
 
         const interaction = this.pane.addFolder({ title: 'Interaction' });
-        interaction.addInput(this, 'ZOOM', { min: 1, max: 2.1, });
+        interaction.addInput(this, 'ZOOM', { min: 0, max: 1, });
 
         sim.on('change', () => this.#updateSimulationParams());
         pointer.on('change', () => this.pointerParamsNeedUpdate = true);
@@ -439,6 +439,8 @@ export class Sketch {
             u_pointerPos: this.pointerLerp,
             u_pointerVelocity: this.pointerLerpDelta,
             u_dt: deltaTime,
+            u_frames: this.#frames,
+            u_zoom: this.ZOOM,
             u_domainScale: this.domainScale
         });
         twgl.setBlockUniforms(
@@ -546,7 +548,10 @@ export class Sketch {
         gl.bindVertexArray(this.quadVAO);
         twgl.setUniforms(this.heightMapPrg, { 
             u_particlePosTexture: this.currentPositionTexture,
-            u_zoom: this.ZOOM,
+            u_heightFactor: this.#remapZoomForHeight(this.ZOOM),
+            u_scale: this.#remapHeightMapZoomScale(this.ZOOM),
+            u_smoothFactor: this.#remapSmoothFactorZoom(this.ZOOM),
+            u_spikeFactor: this.#remapSpikeFactorZoom(this.ZOOM)
         });
         twgl.drawBufferInfo(gl, this.quadBufferInfo);
     }
@@ -555,14 +560,15 @@ export class Sketch {
         this.#updatePointer();
 
         // get the latest audio control value
-        let targetZoomOffset = this.audioControl.getValue();
+        let targetZoomOffset = this.audioControl.getValue(); // [0,1]
         targetZoomOffset = targetZoomOffset === -1 ? 0 : targetZoomOffset;
+        this.targetZoomLerp += (targetZoomOffset - this.targetZoomLerp) / 10;
         // wobble the zoom factor by the offset from the audio control value
-        const deltaZoomOffset = (this.zoomOffset - targetZoomOffset);
-        this.zoomOffsetMomentum -= deltaZoomOffset / 70;
+        const deltaZoomOffset = (this.zoomOffset - this.targetZoomLerp);
+        this.zoomOffsetMomentum -= deltaZoomOffset / 80;
         this.zoomOffsetMomentum *= 0.92;
         this.zoomOffset += this.zoomOffsetMomentum;
-        this.ZOOM = this.DEFAULT_ZOOM - this.zoomOffset / 1.5;
+        this.ZOOM = 0.5 - this.zoomOffset / 2;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -654,7 +660,7 @@ export class Sketch {
         const t = - this.camera.position[1] / ray[1];
         vec3.scale(ray, ray, t);
         const i = vec3.add(vec3.create(), this.camera.position, ray);
-        vec3.scale(i, i, 1 / this.ZOOM);
+        vec3.scale(i, i, 1 / (this.ZOOM + this.#remapHeightMapZoomScale(this.ZOOM)));
         // swap z with y to match simulation plane
         return vec3.fromValues(i[0], i[2], 0);
     }
@@ -667,5 +673,22 @@ export class Sketch {
         }
 
         return worldPos;
+    }
+
+    #remapZoomForHeight(zoom) {
+        // https://www.desmos.com/calculator/lac2i0bgum
+        return -0.36 * zoom * zoom + -0.02 * zoom + 0.38;
+    }
+
+    #remapHeightMapZoomScale(zoom) {
+        return 2 * zoom * zoom + zoom + 1;
+    }
+
+    #remapSmoothFactorZoom(zoom) {
+        return .3 * zoom * zoom + -0.07 * zoom + 0.02;
+    }
+
+    #remapSpikeFactorZoom(zoom) {
+        return 12 * zoom * zoom + -36 * zoom + 25;
     }
 }

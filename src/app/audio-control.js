@@ -1,10 +1,12 @@
+import { clamp, mapRange } from "./utils";
+
 export class AudioControl {
 
     isInitialized = false;
 
     FFT_BUFFER_SIZE = 2048;
     MAX_FREQ = 2400; // the maximum input frequency which result in a control value of 1
-    MIN_FREQ = 400; // the minimum input frequency which result in a control value of 0
+    MIN_FREQ = 500; // the minimum input frequency which result in a control value of 0
 
     VISUALIZER_WIDTH = 200;
     VISUALIZER_HEIGHT = 100;
@@ -46,7 +48,7 @@ export class AudioControl {
             this.mediaStreamSource = this.audioContext.createMediaStreamSource(stream);
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = this.FFT_BUFFER_SIZE;
-            this.analyser.minDecibels = -80;
+            this.analyser.minDecibels = -90;
 
             this.bufferLength = this.analyser.frequencyBinCount;
             this.buffer = new Uint8Array(this.bufferLength);
@@ -69,17 +71,14 @@ export class AudioControl {
 
             // find the frequency band index with the maximum value
             const maxLevelIndex = this.buffer.reduce((max, value, index) => value > max.value ? { value, index } : max, {value: 0, index: 0}).index;
-            const frequency = Math.max(this.MIN_FREQ, Math.min(maxLevelIndex * this.freqBandwidth, this.MAX_FREQ)) - this.MIN_FREQ;
+            let frequency = maxLevelIndex * this.freqBandwidth;
 
             if (frequency > 0) {
                 // make logarithmic range to appeare more natural in respect to musical notes
-                let result = Math.log2(frequency) / Math.log2(this.MAX_FREQ);
-
-                // cut off the lower half and stretch the remaining spectrum (makes it easier to control)
-                result = Math.max(0, result - 0.5) * (1 / 0.5);
-                result = (result - 0.5) * 2.;
+                let result = mapRange(Math.log2(frequency), Math.log2(this.MIN_FREQ), Math.log2(this.MAX_FREQ), 0, 1);
+                result = result * 2 - 1;
                 
-                return result;
+                return clamp(result, -1, 1);
             }
         }
         return -1;

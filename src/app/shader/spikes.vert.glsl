@@ -17,18 +17,13 @@ out vec3 v_normal;
 
 #include ./utils/particle-utils.glsl;
 
-vec3 distort(vec3 p) {
+vec3 distort(vec3 p, float zoom) {
     // get the height info
     vec2 uv = p.xz * 0.5 + 0.5;
     float res = texture(u_heightMapTexture, uv).r;
 
-    // weight by zoom
-    float zoomFactor = 1. + (1.9 - u_zoom) * 0.6;
-    res *= zoomFactor;
-
     // smooth out edges
-    zoomFactor = 1. + (1.9 - u_zoom) * 0.2;
-    float edge = smoothstep(0.5, max(0.8, .8 * zoomFactor), 1. - length(p));
+    float edge = smoothstep(0.5, (1. - u_zoom) * .2 + 0.8, 1. - length(p));
     res *= edge;
 
     // spherical part
@@ -41,12 +36,14 @@ vec3 distort(vec3 p) {
 void main() {
     vec2 heightMapSize = vec2(textureSize(u_heightMapTexture, 0));
     vec2 heightMapTexelSize = 1./heightMapSize;
-    vec3 p = distort(position);
+    float zoom = u_zoom + 1.9;
+
+    vec3 p = distort(position, zoom);
     
     // normal estimation
     float epsilon = heightMapTexelSize.x * 2.;
-    vec3 t = distort(position + vec3(epsilon, 0., 0.));
-    vec3 b = distort(position + vec3(0., 0., epsilon));
+    vec3 t = distort(position + vec3(epsilon, 0., 0.), zoom);
+    vec3 b = distort(position + vec3(0., 0., epsilon), zoom);
     v_normal = normalize(cross(t - b, p - b));
 
     v_texcoord = texcoord;
