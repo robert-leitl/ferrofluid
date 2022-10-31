@@ -578,7 +578,7 @@ export class Sketch {
         this.zoomOffsetMomentum -= deltaZoomOffset / 80;
         this.zoomOffsetMomentum *= 0.92;
         this.zoomOffset += this.zoomOffsetMomentum;
-        this.ZOOM = 0.5 - this.zoomOffset / 2;
+        if (this.audioControl.isInitialized) this.ZOOM = 0.5 - this.zoomOffset / 2;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -606,7 +606,8 @@ export class Sketch {
         twgl.bindFramebufferInfo(gl, null);
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
-        gl.clearColor(0., 0., 0., 1.);
+        const cv = 0.23;
+        gl.clearColor(cv, cv, cv, 1.);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.useProgram(this.spikesPrg.program);
         twgl.setUniforms(this.spikesPrg, {
@@ -623,7 +624,7 @@ export class Sketch {
 
         
 
-       if (this.isDev) {
+       /*if (this.isDev) {
             const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
             // draw helper view of particle texture
             gl.viewport(0, 0, maxViewportSide / 4, maxViewportSide / 4);
@@ -642,7 +643,7 @@ export class Sketch {
             });
             gl.drawArrays(gl.POINTS, 0, this.NUM_PARTICLES);
             gl.disable(gl.BLEND);
-        }
+        }*/
     }
 
     #updateCameraMatrix() {
@@ -653,7 +654,7 @@ export class Sketch {
     #updateProjectionMatrix(gl) {
         this.camera.aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
-        const height = .4;
+        const height = .45;
         const distance = this.camera.position[2];
         if (this.camera.aspect > 1) {
             this.camera.fov = 2 * Math.atan( height / distance );
