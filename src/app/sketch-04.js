@@ -578,7 +578,7 @@ export class Sketch {
         this.zoomOffsetMomentum -= deltaZoomOffset / 80;
         this.zoomOffsetMomentum *= 0.92;
         this.zoomOffset += this.zoomOffsetMomentum;
-        if (targetZoomOffset !== 0) this.ZOOM = 0.5 - this.zoomOffset / 2;
+        this.ZOOM = 0.5 - this.zoomOffset / 2;
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
