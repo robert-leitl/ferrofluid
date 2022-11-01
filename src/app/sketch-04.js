@@ -186,7 +186,7 @@ export class Sketch {
         this.spikesBufferInfo = twgl.createBufferInfoFromArrays(gl, spikesArrays);
         this.spikesVAO = twgl.createVAOAndSetAttributes(gl, this.spikesPrg.attribSetters, this.spikesBufferInfo.attribs, this.spikesBufferInfo.indices);
         this.spikesWorldMatrix = mat4.create();
-        this.groundBufferInfo = twgl.primitives.createDiscBufferInfo(gl, 1.3, 28);
+        this.groundBufferInfo = twgl.primitives.createDiscBufferInfo(gl, 1.3, 8);
         this.groundVAO = twgl.createVAOAndSetAttributes(gl, this.groundPrg.attribSetters, this.groundBufferInfo.attribs, this.groundBufferInfo.indices);
         this.groundWorldMatrix = mat4.create();
 
@@ -664,7 +664,8 @@ export class Sketch {
             u_viewMatrix: this.camera.matrices.view,
             u_projectionMatrix: this.camera.matrices.projection,
             u_cameraPosition: this.camera.position,
-            u_envMapTexture: this.envMapTexture
+            u_envMapTexture: this.envMapTexture,
+            u_zoom: this.ZOOM
         });
         gl.bindVertexArray(this.groundVAO);
         gl.drawElements(gl.TRIANGLES, this.groundBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);

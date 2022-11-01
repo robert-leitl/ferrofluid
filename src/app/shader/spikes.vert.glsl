@@ -38,9 +38,8 @@ void main() {
     vec2 heightMapTexelSize = 1./heightMapSize;
     float zoom = u_zoom + 1.9;
 
-   // vec3 cameraWorldPos = vec3(u_viewMatrix)
-
     vec3 p = distort(position, zoom);
+    vec4 worldPosition = u_worldMatrix * vec4(p, 1.);
     
     // normal estimation
     float epsilon = heightMapTexelSize.x * 2.;
@@ -49,6 +48,6 @@ void main() {
     v_normal = normalize(cross(t - b, p - b));
 
     v_texcoord = texcoord;
-    v_position = position;
-    gl_Position = u_projectionMatrix * u_viewMatrix * u_worldMatrix * vec4(p, 1.);
+    v_position = worldPosition.xyz;
+    gl_Position = u_projectionMatrix * u_viewMatrix * worldPosition;
 }
