@@ -41,7 +41,7 @@ void main() {
     // fresnel
     float ft = dot(N, normalize(vec3(0., 0., 1.)));
     float fresnelValue = smoothstep(0.6, 1., min(1., pow(1. - ft, 2.)));
-    fresnelValue *= smoothstep(0.5, 1.5, 1. - v_position.z) * 0.5 + 0.5;
+    fresnelValue *= smoothstep(0.5, 1., 1. - v_position.z) * 0.6 + 0.4;
     vec3 fresnel = fresnelValue * vec3(0.9, 1., 1.);
 
     // fade out the borders
