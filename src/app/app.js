@@ -29,6 +29,8 @@ const resize = () => {
     }
 }
 
+const logoElm = document.body.querySelector('#logo');
+const inputInfoElm = document.body.querySelector('#input-info');
 const micBtnElm = document.body.querySelector('#microphone-button');
 
 // add a debounced resize listener
@@ -45,5 +47,18 @@ fromEvent(micBtnElm, 'click').subscribe(() => {
 
 // INIT APP
 const canvasElm = document.querySelector('canvas');
-sketch = new Sketch(canvasElm, audioControl, (instance) => instance.run(), isDev, pane);
+sketch = new Sketch(
+    canvasElm, 
+    audioControl, 
+    (instance) => { 
+        instance.run();
+    }, 
+    () => {
+        logoElm.style.opacity = 1;
+        inputInfoElm.style.opacity = 1;
+        inputInfoElm.style.pointerEvents = 'all';
+    },
+    isDev, 
+    pane
+);
 resize();

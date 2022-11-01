@@ -40,13 +40,13 @@ void main() {
     vec3 fresnel = fresnelValue * vec3(0.9, 1., 1.);
 
     // fade out the borders
-    vec2 c = v_texcoord * 2. - 1.;
-    float edgeMask = 1. - smoothstep(0.5, 1., dot(c,c)) * 1.;
+    vec2 c = v_position.xz;
+    float edgeMask = 1. - smoothstep(0.6, 1., dot(c,c)) * 1.;
 
     // iridescence
 
 
     vec3 color = ambient * 0.2 + fresnel * 0.2 + specularValue * 1.5;
 
-    outColor = vec4(color, 1.);
+    outColor = vec4(mix(vec3(0.05), color, edgeMask), 1.);
 }

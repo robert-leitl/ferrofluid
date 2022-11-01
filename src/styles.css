@@ -16,6 +16,12 @@ html, body {
     background-color: black;
 }
 
+@media screen and (max-width: 800px) {
+    body {
+        font-size: 12px;
+    }
+}
+
 body {
     position: relative;
 }
@@ -37,9 +43,73 @@ canvas {
     font-size: 0.8em;
 }
 
-#microphone-button {
+#logo {
     position: absolute;
-    top: 0;
+    top: 5vh;
+    left: 50%;
+    z-index: 10;
+    height: 8vh;
+    fill: #888;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 800ms;
+}
+
+#input-info {
+    position: absolute;
+    bottom: 5vh;
     left: 0;
+    width: 100%;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-family: Andale Mono,AndaleMono,monospace; 
+    font-size: 0.9em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms;
+    transition-delay: 700ms;
+}
+
+#input-info p {
+    margin: 0;
+}
+
+#microphone-button {
+    background: transparent;
+    border: 2px solid #aaa;
+    stroke: #aaa;
+    border-radius: 10em;
+    width: 8vh;
+    height: 8vh;
+    max-width: 5em;
+    max-height: 5em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1em;
+}
+
+#microphone-button:disabled svg {
+    display: none;
+}
+
+#microphone-button:disabled::before {
+    content: '';
+    display: block;
+    background: #f33;
+    width: 3em;
+    height: 3em;
+    border-radius: 100%;
+    border: none;
+}
+
+
+#microphone-button svg {
+    width: 80%;
+    height: 80%;
 }

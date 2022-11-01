@@ -22,6 +22,9 @@ import spikesVert from './shader/spikes.vert.glsl';
 import spikesFrag from './shader/spikes.frag.glsl';
 import testVert from './shader/test.vert.glsl';
 import testFrag from './shader/test.frag.glsl';
+import groundVert from './shader/ground.vert.glsl';
+import groundFrag from './shader/ground.frag.glsl';
+import { easeInExpo, easeInOutCubic, easeInOutExpo, easeOutQuint } from "./utils";
 
 export class Sketch {
 
@@ -37,7 +40,7 @@ export class Sketch {
     NUM_PARTICLES = 500;
 
     // spikes plane properties
-    ZOOM = .5;
+    ZOOM = 1;
 
     // audio controlled zoom offset
     zoomOffsetMomentum = 0;
@@ -46,6 +49,12 @@ export class Sketch {
 
     // resolution of the spikes plane (side segments)
     planeResolution = 128;
+
+    // entry animation properties
+    entryDelay = 120; // frames
+    entryDuration = 420; // frames
+    entryProgress = 0;
+    isEntryAnimationDone = false;
 
     simulationParams = {
         H: 1, // kernel radius
@@ -87,9 +96,10 @@ export class Sketch {
         }
     };
 
-    constructor(canvasElm, audioControl, onInit = null, isDev = false, pane = null) {
+    constructor(canvasElm, audioControl, onInit = null, onEntryAnimationDone = null, isDev = false, pane = null) {
         this.canvas = canvasElm;
         this.onInit = onInit;
+        this.onEntryAnimationDone = onEntryAnimationDone;
         this.isDev = isDev;
         this.pane = pane;
         this.audioControl = audioControl;
@@ -103,8 +113,10 @@ export class Sketch {
         this.#deltaFrames = this.#deltaTime / this.TARGET_FRAME_DURATION;
         this.#frames += this.#deltaFrames;
 
-        this.#animate(this.#deltaTime);
-        this.#render();
+        if (this.envMapTextureLoaded) {
+            this.#animate(this.#deltaTime);
+            this.#render();
+        }
 
         requestAnimationFrame((t) => this.run(t));
     }
@@ -160,6 +172,7 @@ export class Sketch {
         this.heightMapPrg = twgl.createProgramInfo(gl, [heightMapVert, heightMapFrag]);
         this.spikesPrg = twgl.createProgramInfo(gl, [spikesVert, spikesFrag]);
         this.testPrg = twgl.createProgramInfo(gl, [testVert, testFrag]);
+        this.groundPrg = twgl.createProgramInfo(gl, [groundVert, groundFrag]);
 
         // Setup uinform blocks
         this.simulationParamsUBO = twgl.createUniformBlockInfo(gl, this.pressurePrg, 'u_SimulationParams');
@@ -173,6 +186,9 @@ export class Sketch {
         this.spikesBufferInfo = twgl.createBufferInfoFromArrays(gl, spikesArrays);
         this.spikesVAO = twgl.createVAOAndSetAttributes(gl, this.spikesPrg.attribSetters, this.spikesBufferInfo.attribs, this.spikesBufferInfo.indices);
         this.spikesWorldMatrix = mat4.create();
+        this.groundBufferInfo = twgl.primitives.createDiscBufferInfo(gl, 1.3, 28);
+        this.groundVAO = twgl.createVAOAndSetAttributes(gl, this.groundPrg.attribSetters, this.groundBufferInfo.attribs, this.groundBufferInfo.indices);
+        this.groundWorldMatrix = mat4.create();
 
         // Setup Framebuffers
         this.pressureFBO = twgl.createFramebufferInfo(gl, [{attachment: this.textures.densityPressure}], this.textureSize, this.textureSize);
@@ -355,9 +371,11 @@ export class Sketch {
         /** @type {WebGLRenderingContext} */
         const gl = this.gl;
 
+        this.envMapTextureLoaded = false;
+
         this.envMapTexture = twgl.createTexture(gl, {
-            src: new URL('../assets/env-map-01.jpg', import.meta.url).toString()
-        });
+            src: new URL('../assets/env-map-01.jpg', import.meta.url).toString(),
+        }, () => this.envMapTextureLoaded = true);
     }
 
     #initTweakpane() {
@@ -374,8 +392,8 @@ export class Sketch {
         pointer.addInput(this.pointerParams, 'RADIUS', { min: 0.1, max: 5, });
         pointer.addInput(this.pointerParams, 'STRENGTH', { min: 1, max: 35, });
 
-        const interaction = this.pane.addFolder({ title: 'Interaction' });
-        interaction.addInput(this, 'ZOOM', { min: 0, max: 1, });
+        //const interaction = this.pane.addFolder({ title: 'Interaction' });
+        //interaction.addInput(this, 'ZOOM', { min: 0, max: 1, });
 
         sim.on('change', () => this.#updateSimulationParams());
         pointer.on('change', () => this.pointerParamsNeedUpdate = true);
@@ -569,16 +587,46 @@ export class Sketch {
     #animate(deltaTime) {
         this.#updatePointer();
 
-        // get the latest audio control value
-        let targetZoomOffset = this.audioControl.getValue(); // [0,1]
-        targetZoomOffset = targetZoomOffset === -1 ? 0 : targetZoomOffset;
-        this.targetZoomLerp += (targetZoomOffset - this.targetZoomLerp) / 10;
-        // wobble the zoom factor by the offset from the audio control value
-        const deltaZoomOffset = (this.zoomOffset - this.targetZoomLerp);
-        this.zoomOffsetMomentum -= deltaZoomOffset / 80;
-        this.zoomOffsetMomentum *= 0.92;
-        this.zoomOffset += this.zoomOffsetMomentum;
-        if (this.audioControl.isInitialized) this.ZOOM = 0.5 - this.zoomOffset / 2;
+        if (this.isEntryAnimationDone) {
+            // get the latest audio control value
+            let targetZoomOffset = this.audioControl.getValue(); // [0,1]
+            targetZoomOffset = targetZoomOffset === -1 ? 0 : targetZoomOffset;
+            this.targetZoomLerp += (targetZoomOffset - this.targetZoomLerp) / 10;
+            // wobble the zoom factor by the offset from the audio control value
+            const deltaZoomOffset = (this.zoomOffset - this.targetZoomLerp);
+            this.zoomOffsetMomentum -= deltaZoomOffset / 50;
+            this.zoomOffsetMomentum *= 0.92;
+            this.zoomOffset += this.zoomOffsetMomentum;
+            if (this.audioControl.isInitialized) this.ZOOM = 0.5 - this.zoomOffset / 2;
+        } else {
+
+            if (this.entryProgress >= this.entryDelay) {
+                const frameProgress = (this.entryProgress - this.entryDelay);
+                const part1 = this.entryDuration * .7;
+                const part2 = this.entryDuration - part1;
+
+                // first part of entry animation: rise until peak
+                if (frameProgress < part1) {
+                    const progress = frameProgress / part1;
+                    const t = easeInOutExpo(progress);
+                    this.ZOOM = 1 - t;
+                } else {
+                    const progress = (frameProgress - part1) / part2;
+                    const t = easeInOutCubic(progress);
+                    this.ZOOM = 0.5 * t;
+                }
+
+            }
+
+            this.entryProgress++;
+
+            if (this.entryProgress >= this.entryDuration + this.entryDelay) {
+                if (this.onEntryAnimationDone) this.onEntryAnimationDone();
+                this.isEntryAnimationDone = true;
+            }
+        }
+
+        
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -603,13 +651,28 @@ export class Sketch {
         /** @type {WebGLRenderingContext} */
         const gl = this.gl;
 
+        // draw ground
         twgl.bindFramebufferInfo(gl, null);
-        gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
-        const cv = 0.23;
+        const cv = .05;
         gl.clearColor(cv, cv, cv, 1.);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(this.groundPrg.program);
+        twgl.setUniforms(this.groundPrg, {
+            u_worldMatrix: this.groundWorldMatrix,
+            u_viewMatrix: this.camera.matrices.view,
+            u_projectionMatrix: this.camera.matrices.projection,
+            u_cameraPosition: this.camera.position,
+            u_envMapTexture: this.envMapTexture
+        });
+        gl.bindVertexArray(this.groundVAO);
+        gl.drawElements(gl.TRIANGLES, this.groundBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+
+
+        // draw spikes
         gl.useProgram(this.spikesPrg.program);
+        gl.enable(gl.DEPTH_TEST);
         twgl.setUniforms(this.spikesPrg, {
             u_worldMatrix: this.spikesWorldMatrix,
             u_viewMatrix: this.camera.matrices.view,
@@ -654,7 +717,7 @@ export class Sketch {
     #updateProjectionMatrix(gl) {
         this.camera.aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
 
-        const height = .45;
+        const height = .4;
         const distance = this.camera.position[2];
         if (this.camera.aspect > 1) {
             this.camera.fov = 2 * Math.atan( height / distance );

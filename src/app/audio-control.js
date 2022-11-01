@@ -6,7 +6,7 @@ export class AudioControl {
 
     FFT_BUFFER_SIZE = 2048;
     MAX_FREQ = 2400; // the maximum input frequency which result in a control value of 1
-    MIN_FREQ = 500; // the minimum input frequency which result in a control value of 0
+    MIN_FREQ = 400; // the minimum input frequency which result in a control value of 0
 
     VISUALIZER_WIDTH = 200;
     VISUALIZER_HEIGHT = 100;
