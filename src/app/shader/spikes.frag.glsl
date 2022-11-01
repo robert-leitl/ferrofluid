@@ -4,6 +4,7 @@ precision highp float;
 
 uniform sampler2D u_envMapTexture;
 uniform vec3 u_cameraPosition;
+uniform float u_zoom;
 
 out vec4 outColor;
 
@@ -15,6 +16,10 @@ in vec3 v_normal;
 
 float powFast(float a, float b) {
   return a / ((1. - b) * a + b);
+}
+
+vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) {
+    return a + b*cos( 6.28318*(c*t+d) );
 }
 
 void main() {
@@ -40,13 +45,18 @@ void main() {
     vec3 fresnel = fresnelValue * vec3(0.9, 1., 1.);
 
     // fade out the borders
-    vec2 c = v_texcoord * 2. - 1.;
-    float edgeMask = 1. - smoothstep(0.5, 1., dot(c,c)) * 1.;
+    vec2 center = v_texcoord * 2. - 1.;
+    float edgeMask = 1. - smoothstep(0., .8, dot(center, center)) * 1.;
 
     // iridescence
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.00, 0.33, 0.67);
+    vec3 iridescence = palette(ft * 3., a, b, c, d) * (1. - ft);
+    iridescence *= edgeMask * 0.05 * (2. - u_zoom * 2.);
 
-
-    vec3 color = ambient * 0.2 + fresnel * 0.2 + specularValue * 1.5;
+    vec3 color = ambient * 0.2 + fresnel * 0.2 + specularValue * 1.2 + iridescence;
 
     outColor = vec4(color, 1.);
 }
