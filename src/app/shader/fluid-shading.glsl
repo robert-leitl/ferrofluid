@@ -40,7 +40,7 @@ vec3 fluidShading(vec3 V, vec3 N, vec3 position, float zoom, sampler2D envMapTex
   float edgeMask = 1. - smoothstep(0., .8, dot(center, center));
   iridescence *= edgeMask * 0.05 * (2. - zoom * 2.);
 
-  vec3 color = ambient * 0.1 + fresnel * 0.3 + specularValue * 1.2 + iridescence;
+  vec3 color = ambient * 0.2 + fresnel * 0.3 + specularValue * 1.2 + iridescence;
 
   return color;
 }
