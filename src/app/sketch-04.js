@@ -108,12 +108,12 @@ export class Sketch {
     }
 
     run(time = 0) {
-        this.#deltaTime = Math.min(16, time - this.#time);
-        this.#time = time;
-        this.#deltaFrames = this.#deltaTime / this.TARGET_FRAME_DURATION;
-        this.#frames += this.#deltaFrames;
-
         if (this.envMapTextureLoaded) {
+            this.#deltaTime = Math.min(16, time - this.#time);
+            this.#time = time;
+            this.#deltaFrames = this.#deltaTime / this.TARGET_FRAME_DURATION;
+            this.#frames += this.#deltaFrames;
+
             this.#animate(this.#deltaTime);
             this.#render();
         }
