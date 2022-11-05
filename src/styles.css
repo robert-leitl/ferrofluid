@@ -84,9 +84,9 @@ canvas {
     stroke: #aaa;
     border-radius: 3em;
     width: 8vh;
-    height: 7vh;
+    height: 8vh;
     max-width: 5em;
-    max-height: 6em;
+    max-height: 7em;
     cursor: pointer;
     display: flex;
     align-items: center;
