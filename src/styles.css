@@ -82,16 +82,16 @@ canvas {
     background: transparent;
     border: 2px solid #aaa;
     stroke: #aaa;
-    border-radius: 10em;
+    border-radius: 3em;
     width: 8vh;
-    height: 8vh;
+    height: 7vh;
     max-width: 5em;
-    max-height: 5em;
+    max-height: 6em;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1em;
+    margin-bottom: 2em;
 }
 
 #microphone-button:disabled svg {

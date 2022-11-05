@@ -618,7 +618,7 @@ export class Sketch {
 
             }
 
-            this.entryProgress++;
+            this.entryProgress += this.#deltaFrames;
 
             if (this.entryProgress >= this.entryDuration + this.entryDelay) {
                 if (this.onEntryAnimationDone) this.onEntryAnimationDone();
