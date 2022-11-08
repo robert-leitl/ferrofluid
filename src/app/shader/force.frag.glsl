@@ -91,7 +91,7 @@ void main() {
                 if (r2 < HSQ) {
                     float r = sqrt(r2);
 
-                    if (r != 0.) {
+                    if (r >= 0.00001) {
                         vec4 pressureForce = vec4(pij);
                         vec4 viscosityForce = vec4(0.);
 
