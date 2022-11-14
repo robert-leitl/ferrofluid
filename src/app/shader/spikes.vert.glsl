@@ -45,7 +45,7 @@ void main() {
     float epsilon = heightMapTexelSize.x * 2.;
     vec3 t = distort(position + vec3(epsilon, 0., 0.), zoom);
     vec3 b = distort(position + vec3(0., 0., epsilon), zoom);
-    v_normal = normalize(cross(t - b, p - b));
+    v_normal = normalize(cross(t - p, p - b));
 
     //float h = texture(u_heightMapTexture, position.xz * 0.5 + 0.5).r;
     //v_normal = normalize(vec3(h, 1., 1.));
