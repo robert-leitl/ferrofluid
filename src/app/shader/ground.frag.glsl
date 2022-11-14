@@ -24,4 +24,5 @@ void main() {
     float edgeMask = 1. - smoothstep(0.6, 1., dot(c,c)) * 1.;
  
     outColor = vec4(mix(vec3(0.05), color, edgeMask), 1.);
+    //outColor = vec4(color, 1.);
 }

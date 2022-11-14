@@ -688,10 +688,10 @@ export class Sketch {
 
         
 
-       /*if (this.isDev) {
-            const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
+       if (this.isDev) {
+            /*const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
             // draw helper view of particle texture
-            gl.viewport(0, 0, maxViewportSide / 4, maxViewportSide / 4);
+            gl.viewport(0, 0, maxViewportSide / 3, maxViewportSide / 3);
             gl.disable(gl.CULL_FACE);
             gl.disable(gl.DEPTH_TEST);
             gl.enable(gl.BLEND);
@@ -706,8 +706,18 @@ export class Sketch {
                 u_domainScale: this.domainScale,
             });
             gl.drawArrays(gl.POINTS, 0, this.NUM_PARTICLES);
-            gl.disable(gl.BLEND);
-        }*/
+            gl.disable(gl.BLEND);*/
+
+            /*const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
+            // draw helper view of particle texture
+            gl.viewport(0, 0, maxViewportSide / 3, maxViewportSide / 3);
+            gl.bindVertexArray(this.quadVAO);
+            gl.useProgram(this.testPrg.program);
+            twgl.setUniforms(this.drawPrg, { 
+                u_heightMapTexture: this.textures.heightMap
+            });
+            twgl.drawBufferInfo(gl, this.quadBufferInfo);*/
+        }
     }
 
     #updateCameraMatrix() {

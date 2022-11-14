@@ -34,7 +34,7 @@ void main() {
     int cellId = pos2CellId(pi.xy, u_cellTexSize, u_domainScale, u_cellSize);
 
     gl_Position = vec4(pi.xyz, 1.);
-    gl_PointSize = pointSize;
+    gl_PointSize = pointSize * 1.5;
 
     float numCells = float(u_cellTexSize.x * u_cellTexSize.y);
 

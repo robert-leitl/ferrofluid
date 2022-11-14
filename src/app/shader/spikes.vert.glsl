@@ -47,7 +47,11 @@ void main() {
     vec3 b = distort(position + vec3(0., 0., epsilon), zoom);
     v_normal = normalize(cross(t - b, p - b));
 
+    //float h = texture(u_heightMapTexture, position.xz * 0.5 + 0.5).r;
+    //v_normal = normalize(vec3(h, 1., 1.));
+
     v_texcoord = texcoord;
     v_position = worldPosition.xyz;
     gl_Position = u_projectionMatrix * u_viewMatrix * worldPosition;
+    //gl_Position = u_projectionMatrix * u_viewMatrix * u_worldMatrix * vec4(position, 1.);
 }

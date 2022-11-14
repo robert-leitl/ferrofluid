@@ -42,5 +42,7 @@ vec3 fluidShading(vec3 V, vec3 N, vec3 position, float zoom, sampler2D envMapTex
 
   vec3 color = ambient * 0.2 + fresnel * 0.3 + specularValue * 1.2 + iridescence;
 
+  //color = vec3(smoothstep(0.8, 0.83, N.x * 5.));
+
   return color;
 }
