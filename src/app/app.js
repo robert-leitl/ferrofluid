@@ -55,6 +55,7 @@ sketch = new Sketch(
     }, 
     () => {
         logoElm.style.opacity = 1;
+        logoElm.style.letterSpacing = '1.3em';
         inputInfoElm.style.opacity = 1;
         inputInfoElm.style.pointerEvents = 'all';
     },

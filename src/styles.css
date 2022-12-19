@@ -52,7 +52,15 @@ canvas {
     fill: #888;
     transform: translateX(-50%);
     opacity: 0;
-    transition: opacity 800ms;
+    transition: opacity 1200ms, letter-spacing 4s;
+    text-transform: uppercase;
+    color: #aaa;
+    font-family: Andale Mono,AndaleMono,monospace; 
+    font-weight: 100;
+    letter-spacing: 2em;
+    font-size: 1.5em;
+    padding-left: 1.3em;
+    contain: layout;
 }
 
 #input-info {
