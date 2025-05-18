@@ -25,6 +25,7 @@ import testFrag from './shader/test.frag.glsl';
 import groundVert from './shader/ground.vert.glsl';
 import groundFrag from './shader/ground.frag.glsl';
 import { easeInExpo, easeInOutCubic, easeInOutExpo, easeOutQuint } from "./utils";
+import {isIOS} from './is-ios.js';
 
 export class Sketch {
 
@@ -207,7 +208,7 @@ export class Sketch {
         this.#updateProjectionMatrix(gl);
 
         this.resize();
-        
+
         if (this.onInit) this.onInit(this);
     }
 
@@ -249,7 +250,7 @@ export class Sketch {
 
     #getNormalizedPointerCoords(e) {
         return vec2.fromValues(
-            (e.clientX / this.viewportSize[0]) * 2. - 1, 
+            (e.clientX / this.viewportSize[0]) * 2. - 1,
             (1 - (e.clientY / this.viewportSize[1])) * 2. - 1
         );
     }
@@ -260,64 +261,64 @@ export class Sketch {
 
          // get a power of two texture size
          this.textureSize = 2**Math.ceil(Math.log2(Math.sqrt(this.NUM_PARTICLES)));
- 
+
          // update the particle size to fill the texture space
          this.NUM_PARTICLES = this.textureSize * this.textureSize;
          this.simulationParams.PARTICLE_COUNT = this.NUM_PARTICLES;
          this.simulationParamsNeedUpdate = true;
- 
+
          console.log('number of particles:', this.NUM_PARTICLES);
- 
+
          // update the sort params
          this.logNumParticles = Math.log2(this.textureSize);
          this.totalSortSteps = ((this.logNumParticles + this.logNumParticles) * (this.logNumParticles + this.logNumParticles + 1)) / 2;
- 
+
          // define the cell sizes
          // use a fixed cell side count for this project
          this.cellSideCount = 11;
          this.numCells = this.cellSideCount * this.cellSideCount;
- 
+
          console.log('number of cells:', this.numCells);
 
          // heightmap size
          this.heightMapSize = this.planeResolution * 2;
- 
+
          const initVelocities = new Float32Array(this.NUM_PARTICLES * 4);
          const initForces = new Float32Array(this.NUM_PARTICLES * 4);
          const initPositions = new Float32Array(this.NUM_PARTICLES * 4);
- 
+
          for(let i=0; i<this.NUM_PARTICLES; ++i) {
              initVelocities[i * 4 + 0] = 0;
              initVelocities[i * 4 + 1] = 0;
              initPositions[i * 4 + 0] = Math.random() * 2 - 1;
              initPositions[i * 4 + 1] = Math.random() * 2 - 1;
          }
- 
+
          // empty offset texture
          this.initialOffsetTextureData = new Uint16Array(this.numCells);
          this.initialOffsetTextureData.fill(Number.MAX_VALUE);
- 
+
          const defaultOptions = {
              width: this.textureSize,
              height: this.textureSize,
-             min: gl.NEAREST, 
+             min: gl.NEAREST,
              mag: gl.NEAREST,
              wrap: gl.REPEAT
          }
- 
+
          const defaultVectorTexOptions = {
              ...defaultOptions,
              format: gl.RGBA,
-             internalFormat: gl.RGBA32F, 
+             internalFormat: gl.RGBA32F,
          }
- 
+
          const defaultIndicesTexOptions = {
              ...defaultOptions,
              format: gl.RG_INTEGER,
              internalFormat: gl.RG16UI,
              wrap: gl.CLAMP_TO_EDGE
          }
- 
+
          this.offsetTextureOptions = {
              ...defaultOptions,
              width: this.cellSideCount,
@@ -326,12 +327,12 @@ export class Sketch {
              internalFormat: gl.R16UI,
              wrap: gl.CLAMP_TO_EDGE
          }
- 
-         this.textures = twgl.createTextures(gl, { 
+
+         this.textures = twgl.createTextures(gl, {
              densityPressure: {
                  ...defaultOptions,
-                 format: gl.RG, 
-                 internalFormat: gl.RG32F, 
+                 format: gl.RG,
+                 internalFormat: gl.RG32F,
                  src: new Float32Array(this.NUM_PARTICLES * 2)
              },
              force: { ...defaultVectorTexOptions, src: [...initForces] },
@@ -352,17 +353,17 @@ export class Sketch {
                  src: this.initialOffsetTextureData,
              },
              heightMap: {
-                min: gl.LINEAR, 
-                mag: gl.LINEAR,
+                min: isIOS ? gl.NEAREST : gl.LINEAR,
+                mag: isIOS ? gl.NEAREST : gl.LINEAR,
                 wrap: gl.CLAMP_TO_EDGE,
                 width: this.heightMapSize,
                 height: this.heightMapSize,
-                format: gl.RED, 
-                internalFormat: gl.R32F, 
+                format: gl.RED,
+                internalFormat: gl.R32F,
                 src: new Float32Array(this.heightMapSize * this.heightMapSize)
             },
          });
- 
+
          this.currentPositionTexture = this.textures.position2;
          this.currentVelocityTexture = this.textures.velocity2;
     }
@@ -433,7 +434,7 @@ export class Sketch {
         gl.useProgram(this.pressurePrg.program);
         twgl.bindFramebufferInfo(gl, this.pressureFBO);
         gl.bindVertexArray(this.quadVAO);
-        twgl.setUniforms(this.pressurePrg, { 
+        twgl.setUniforms(this.pressurePrg, {
             u_positionTexture: this.inFBO.attachments[0],
             u_indicesTexture: this.currentIndicesTexture,
             u_offsetTexture: this.textures.offset,
@@ -444,9 +445,9 @@ export class Sketch {
         // calculate pressure-, viscosity- and boundary forces for every particle
         gl.useProgram(this.forcePrg.program);
         twgl.bindFramebufferInfo(gl, this.forceFBO);
-        twgl.setUniforms(this.forcePrg, { 
+        twgl.setUniforms(this.forcePrg, {
             u_densityPressureTexture: this.pressureFBO.attachments[0],
-            u_positionTexture: this.inFBO.attachments[0], 
+            u_positionTexture: this.inFBO.attachments[0],
             u_velocityTexture: this.inFBO.attachments[1],
             u_indicesTexture: this.currentIndicesTexture,
             u_offsetTexture: this.textures.offset,
@@ -459,8 +460,8 @@ export class Sketch {
         gl.useProgram(this.integratePrg.program);
         twgl.bindFramebufferInfo(gl, this.outFBO);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        twgl.setUniforms(this.integratePrg, { 
-            u_positionTexture: this.inFBO.attachments[0], 
+        twgl.setUniforms(this.integratePrg, {
+            u_positionTexture: this.inFBO.attachments[0],
             u_velocityTexture: this.inFBO.attachments[1],
             u_forceTexture: this.forceFBO.attachments[0],
             u_densityPressureTexture: this.pressureFBO.attachments[0],
@@ -478,7 +479,7 @@ export class Sketch {
                 pointerStrength: this.pointerParams.STRENGTH,
                 pointerPos: this.pointerLerp,
                 pointerVelocity: this.pointerLerpDelta
-            } 
+            }
         );
         twgl.setUniformBlock(gl, this.integratePrg, this.pointerParamsUBO);
         twgl.drawBufferInfo(gl, this.quadBufferInfo);
@@ -501,7 +502,7 @@ export class Sketch {
         gl.useProgram(this.indicesPrg.program);
         twgl.bindFramebufferInfo(gl, this.indices1FBO);
         gl.bindVertexArray(this.quadVAO);
-        twgl.setUniforms(this.indicesPrg, { 
+        twgl.setUniforms(this.indicesPrg, {
             u_positionTexture: this.currentPositionTexture,
             u_cellTexSize: [this.cellSideCount, this.cellSideCount],
             u_cellSize: this.simulationParams.H,
@@ -531,7 +532,7 @@ export class Sketch {
             const ppass  = (1 << pass);
 
             twgl.bindFramebufferInfo(gl, sortInFBO);
-            twgl.setUniforms(this.sortPrg, { 
+            twgl.setUniforms(this.sortPrg, {
                 u_indicesTexture: sortOutFBO.attachments[0],
                 u_twoStage: pstage + pstage,
                 u_passModStage: ppass % pstage,
@@ -552,7 +553,7 @@ export class Sketch {
         // set the offset list elements
         gl.useProgram(this.offsetPrg.program);
         twgl.bindFramebufferInfo(gl, this.offsetFBO);
-        twgl.setUniforms(this.offsetPrg, { 
+        twgl.setUniforms(this.offsetPrg, {
             u_indicesTexture: sortOutFBO.attachments[0],
             u_texSize: [this.cellSideCount, this.cellSideCount],
             u_particleTexSize: [this.textureSize, this.textureSize],
@@ -574,7 +575,7 @@ export class Sketch {
         gl.disable(gl.DEPTH_TEST);
         gl.disable(gl.BLEND);
         gl.bindVertexArray(this.quadVAO);
-        twgl.setUniforms(this.heightMapPrg, { 
+        twgl.setUniforms(this.heightMapPrg, {
             u_particlePosTexture: this.currentPositionTexture,
             u_heightFactor: this.#remapZoomForHeight(this.ZOOM),
             u_scale: this.#remapHeightMapZoomScale(this.ZOOM),
@@ -626,7 +627,7 @@ export class Sketch {
             }
         }
 
-        
+
 
         // use a fixed deltaTime of 10 ms adapted to
         // device frame rate
@@ -642,8 +643,8 @@ export class Sketch {
         // additional simulation steps
         for(let i=0; i<this.simulationParams.STEPS; ++i) {
             this.#simulate(deltaTime);
-        }        
-        
+        }
+
         this.#renderHeightMap();
     }
 
@@ -686,7 +687,7 @@ export class Sketch {
         gl.bindVertexArray(this.spikesVAO);
         gl.drawElements(gl.TRIANGLES, this.spikesBufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
-        
+
 
        if (this.isDev) {
             /*const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
@@ -697,7 +698,7 @@ export class Sketch {
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA);
             gl.useProgram(this.drawPrg.program);
-            twgl.setUniforms(this.drawPrg, { 
+            twgl.setUniforms(this.drawPrg, {
                 u_positionTexture: this.currentPositionTexture,
                 u_velocityTexture: this.currentVelocityTexture,
                 u_resolution: [maxViewportSide / 4, maxViewportSide / 4],
@@ -708,15 +709,15 @@ export class Sketch {
             gl.drawArrays(gl.POINTS, 0, this.NUM_PARTICLES);
             gl.disable(gl.BLEND);*/
 
-            /*const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
-            // draw helper view of particle texture
-            gl.viewport(0, 0, maxViewportSide / 3, maxViewportSide / 3);
-            gl.bindVertexArray(this.quadVAO);
-            gl.useProgram(this.testPrg.program);
-            twgl.setUniforms(this.drawPrg, { 
-                u_heightMapTexture: this.textures.heightMap
-            });
-            twgl.drawBufferInfo(gl, this.quadBufferInfo);*/
+            // const maxViewportSide = Math.max(this.viewportSize[0], this.viewportSize[1]);
+            // // draw helper view of particle texture
+            // gl.viewport(0, 0, maxViewportSide / 3, maxViewportSide / 3);
+            // gl.bindVertexArray(this.quadVAO);
+            // gl.useProgram(this.testPrg.program);
+            // twgl.setUniforms(this.drawPrg, {
+            //     u_heightMapTexture: this.textures.heightMap
+            // });
+            // twgl.drawBufferInfo(gl, this.quadBufferInfo);
         }
     }
 
@@ -753,7 +754,7 @@ export class Sketch {
     }
 
     #screenToWorldPosition(x, y, z) {
-        const ndcPos = vec3.fromValues(x, y, z); 
+        const ndcPos = vec3.fromValues(x, y, z);
         const worldPos = vec4.transformMat4(vec4.create(), vec4.fromValues(ndcPos[0], ndcPos[1], ndcPos[2], 1), this.camera.matrices.inversViewProjection);
         if (worldPos[3] !== 0){
             vec4.scale(worldPos, worldPos, 1 / worldPos[3]);

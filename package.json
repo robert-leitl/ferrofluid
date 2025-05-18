@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "start": "vite serve",
+    "start": "vite serve --host",
     "build": "vite build --emptyOutDir --base=/ferrofluid/dist/",
     "preview": "vite preview"
   },
